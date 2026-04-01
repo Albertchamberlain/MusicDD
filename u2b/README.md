@@ -28,6 +28,8 @@
 - biliup 命令行工具
 - 稳定的网络连接
 
+> 建议 Python 3.10-3.12。若使用 Python 3.13，旧翻译依赖链可能触发 `ModuleNotFoundError: cgi`；当前一键主流程已去除该依赖。
+
 ### 安装步骤
 
 1. 克隆项目：
@@ -83,9 +85,38 @@ python3 one_click.py -s "https://www.youtube.com/watch?v=xxxxxx" -t 21
 python3 one_click.py -i urls.txt -t 21
 ```
 
+`-t 21` 的含义：
+- `-t` / `--tid` 表示 **B 站投稿分区 ID**
+- `21` 是一个具体分区编号（示例值），表示把视频投到该分区
+- 你可以替换成自己的目标分区 ID（比如 `194` 电子音乐）
+
 执行前确保：
 - 已执行 `bash setup.sh`
 - 已执行 `./biliup login` 生成 `cookies.json`
+
+### one_click 参数详解
+
+```bash
+python3 one_click.py [--single <youtube_url> | --input <urls.txt>] [--tid <分区ID>]
+```
+
+- `-s, --single`：单个 YouTube 链接（与 `--input` 二选一）
+- `-i, --input`：批量链接文件（每行一个 URL，支持 `#COMPLETED` 断点续传）
+- `-t, --tid`：B 站分区 ID，默认 `194`
+
+示例：
+```bash
+# 单条（投稿到分区 21）
+python3 one_click.py -s "https://www.youtube.com/watch?v=VIDEO_ID" -t 21
+
+# 批量（投稿到电子音乐 194）
+python3 one_click.py -i urls.txt -t 194
+```
+
+如何确定分区 ID（tid）：
+- 先在 B 站投稿页手动选择目标分区
+- 在页面请求参数里查看 `tid`（开发者工具 Network）
+- 或先用常见分区测试，确认后固定在脚本参数中
 
 ### 单个视频投稿
 

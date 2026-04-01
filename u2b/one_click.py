@@ -2,8 +2,6 @@ import argparse
 import os
 from pathlib import Path
 
-import new_downloader
-
 
 BASE_DIR = Path(__file__).resolve().parent
 RUNTIME_DIR = BASE_DIR / "runtime"
@@ -28,6 +26,17 @@ def ensure_ready() -> None:
 def run_pipeline(*, single_url: str | None, input_file: str | None, tid: int) -> None:
     if bool(single_url) == bool(input_file):
         raise ValueError("请二选一：使用 `--single` 或 `--input`。")
+
+    try:
+        import new_downloader
+    except ModuleNotFoundError as exc:
+        missing_name = getattr(exc, "name", "") or "unknown"
+        raise RuntimeError(
+            "缺少 Python 依赖，无法启动一键流程。\n"
+            f"未安装模块: {missing_name}\n"
+            "请在 u2b 目录执行:\n"
+            "  python3 -m pip install -r requirements.txt"
+        ) from exc
 
     ensure_ready()
     if single_url:

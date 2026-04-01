@@ -18,8 +18,6 @@ load_dotenv(Path(__file__).resolve().parent / ".env")
 import yt_dlp
 from PIL import Image
 
-import title_unsearch
-
 BASE_DIR = Path(__file__).resolve().parent
 RUNTIME_DIR = BASE_DIR / "runtime"
 VIDEOS_DIR = RUNTIME_DIR / "videos"

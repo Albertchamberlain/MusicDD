@@ -122,6 +122,8 @@ python3 one_click.py -s "https://www.youtube.com/watch?v=VIDEO_ID" -t 21
 python3 one_click.py -i urls.txt -t 21
 ```
 
+说明：`-t` 是 B 站投稿分区 ID（`tid`），示例里的 `21` 只是示例值；可按目标分区改成其他 ID（如 `194`）。
+
 完整参数、分区 TID、断点续传格式等见 **[`u2b/README.md`](u2b/README.md)**。
 
 ---

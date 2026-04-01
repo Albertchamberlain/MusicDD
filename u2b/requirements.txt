@@ -2,4 +2,3 @@ yt_dlp
 requests
 Pillow
 python-dotenv>=1.0.0
-googletrans==4.0.0-rc1
