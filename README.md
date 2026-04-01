@@ -47,7 +47,7 @@
 
 | 模块 | 说明 |
 |------|------|
-| **`u2b/`** | YouTube 下载 + 封面处理 + **B 站自动投稿**；支持单条、批量、断点续传（见子目录 README） |
+| **`u2b/`** | YouTube 下载 + 封面处理 + **B 站自动投稿**；提供 `one_click.py` 一步到位入口（单条/批量/断点续传） |
 | **`scripts/batch_yt_download.py`** | 批量 `yt-dlp` 下载；可选 **`--split`** 用 **ffmpeg** 将超过 30 分钟的视频切段（内置 `split_video`，依赖 `ffmpeg` / `ffprobe`） |
 | **`scripts/split.py`** | 独立脚本：用 **MoviePy** 将长视频按固定时长切片（命令行传入视频路径；与 `batch_yt_download` 无 import 关系） |
 | **`resources/lists/arts/`** | 各艺人 / 主题的 URL 列表文本，便于批量任务复用 |
@@ -115,8 +115,11 @@ python3 scripts/batch_yt_download.py -i urls.txt -o ./downloads --split
 
 ```bash
 cd u2b
-# 按 u2b/README.md：setup.sh、biliup login、配置 OWNER / 线路等
-python3 new_downloader.py -s "https://www.youtube.com/watch?v=VIDEO_ID" -t 21
+# 一步到位（推荐）：下载 -> 转封面 -> 投稿
+python3 one_click.py -s "https://www.youtube.com/watch?v=VIDEO_ID" -t 21
+
+# 批量：支持 #COMPLETED 断点续传
+python3 one_click.py -i urls.txt -t 21
 ```
 
 完整参数、分区 TID、断点续传格式等见 **[`u2b/README.md`](u2b/README.md)**。

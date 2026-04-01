@@ -73,6 +73,20 @@
 
 ## 📝 使用方法
 
+### 一步到位（推荐）
+
+```bash
+# 单个视频：下载 -> 转封面 -> 投稿
+python3 one_click.py -s "https://www.youtube.com/watch?v=xxxxxx" -t 21
+
+# 批量文件：下载 -> 转封面 -> 投稿（支持 #COMPLETED 断点续传）
+python3 one_click.py -i urls.txt -t 21
+```
+
+执行前确保：
+- 已执行 `bash setup.sh`
+- 已执行 `./biliup login` 生成 `cookies.json`
+
 ### 单个视频投稿
 
 ```bash

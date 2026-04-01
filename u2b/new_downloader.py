@@ -7,6 +7,8 @@ import sys
 import time
 import base64
 import platform
+import random
+import subprocess
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -221,7 +223,7 @@ def main(vUrl, TID, plain_title=True):
     CMD = (
         cmd_prefix
         + " upload "
-        + videoPath
+        + shlex.quote(videoPath)
         + " --desc "
         + get_double(description)
         + " --copyright 2 "  # 修改为1表示禁止转载
@@ -231,7 +233,7 @@ def main(vUrl, TID, plain_title=True):
         + str(TID)
         + " --source "
         + get_double(vUrl)
-        + " --line " 
+        + " --line "
         + LineN
         + " --dolby 1 "  # 开启杜比音效
         + " --hires 1 "  # 开启高码率
@@ -242,7 +244,14 @@ def main(vUrl, TID, plain_title=True):
     )
     print("[🚀 Original title]: ", title)
     print("[🚀 Start to using biliup, with these CMD commend]:\n", CMD)
-    biliupOutput = "".join(os.popen(CMD).readlines())
+    upload_result = subprocess.run(
+        CMD,
+        shell=True,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    biliupOutput = (upload_result.stdout or "") + (upload_result.stderr or "")
     if biliupOutput.find("投稿成功") == -1:
         if biliupOutput.find("标题相同") == -1:
             print(biliupOutput)
