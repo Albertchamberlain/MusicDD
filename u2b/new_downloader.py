@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import shlex
 import shutil
 import sys
 import time
@@ -16,6 +17,11 @@ import yt_dlp
 from PIL import Image
 
 import title_unsearch
+
+BASE_DIR = Path(__file__).resolve().parent
+RUNTIME_DIR = BASE_DIR / "runtime"
+VIDEOS_DIR = RUNTIME_DIR / "videos"
+BILIUP_BIN = BASE_DIR / ("biliup.exe" if platform.system() == "Windows" else "biliup")
 
 OWNER_NAME = os.environ.get("U2B_OWNER_NAME", "").strip()
 REMOVE_FILE = True  # 是否删除投稿后的视频文件
@@ -43,9 +49,11 @@ def cover_webp_to_jpg(webp_path, jpg_path):
 
 
 def download(youtube_url, folder_name):
+    video_dir = VIDEOS_DIR / str(folder_name)
+    video_dir.mkdir(parents=True, exist_ok=True)
     ydl_opts = {
         # outtmpl 格式化下载后的文件名，避免默认文件名太长无法保存
-        "outtmpl": f"./videos/{folder_name}/%(id)s.mp4"
+        "outtmpl": str(video_dir / "%(id)s.mp4")
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -62,12 +70,12 @@ def get_info(url):
 
 
 def getVideoPath(id_):
-    path = f"./videos/{id_}"
-    if not os.path.exists(path):
+    path = VIDEOS_DIR / str(id_)
+    if not path.exists():
         print(f"错误：目录 {path} 不存在")
         return None
     
-    for root, dirs, files in os.walk(path):
+    for root, dirs, files in os.walk(str(path)):
         for file in files:
             # 查找包含视频ID的文件，优先选择.mp4文件
             if id_ in file and file.endswith('.mp4'):
@@ -76,7 +84,7 @@ def getVideoPath(id_):
                 return os.path.join(root, file)
     
     # 如果没找到包含ID的文件，返回第一个视频文件
-    for root, dirs, files in os.walk(path):
+    for root, dirs, files in os.walk(str(path)):
         for file in files:
             if file.endswith(('.mp4', '.webm', '.mkv', '.avi')):
                 return os.path.join(root, file)
@@ -87,11 +95,12 @@ def getVideoPath(id_):
 
 def download_image(url, id_):
     r = requests.get(url, stream=True)
-    f = open("./videos/" + str(id_) + "/cover.webp", "wb")
-    # chunk是指定每次写入的大小，每次只写了100kb
-    for chunk in r.iter_content(chunk_size=102400):
-        if chunk:
-            f.write(chunk)
+    cover_path = VIDEOS_DIR / str(id_) / "cover.webp"
+    with open(cover_path, "wb") as f:
+        # chunk是指定每次写入的大小，每次只写了100kb
+        for chunk in r.iter_content(chunk_size=102400):
+            if chunk:
+                f.write(chunk)
 
 
 def judge_chs(title):
@@ -158,21 +167,20 @@ def main(vUrl, TID, plain_title=True):
     # init youtube video info
 
     # Ensure videos directory exists
-    videos_dir = "./videos"
-    if not os.path.exists(videos_dir):
-        os.mkdir(videos_dir)
+    videos_dir = VIDEOS_DIR
+    videos_dir.mkdir(parents=True, exist_ok=True)
 
     # Create sub-directory for the specific video
-    sub_dir = os.path.join(videos_dir, str(id_))
+    sub_dir = videos_dir / str(id_)
     try:
-        os.mkdir(sub_dir)
+        sub_dir.mkdir()
     except FileExistsError:
         shutil.rmtree(sub_dir)
-        os.mkdir(sub_dir)
+        sub_dir.mkdir()
 
     download(vUrl, id_)
     download_image(cover, id_)
-    cover_webp_to_jpg(os.path.join(sub_dir, "cover.webp"), os.path.join(sub_dir, "cover.jpg"))
+    cover_webp_to_jpg(str(sub_dir / "cover.webp"), str(sub_dir / "cover.jpg"))
 
     # if plain_title:
     #     if not judge_chs(title):  # 不包含中文
@@ -207,13 +215,8 @@ def main(vUrl, TID, plain_title=True):
         # description = "-"
     # Ensure paths are correct
     videoPath = os.path.normpath(videoPath)  # 规范化视频文件路径
-    coverPath = os.path.normpath(os.path.join(sub_dir, "cover.jpg"))  # 规范化封面路径
-
-    # Determine command based on OS
-    if platform.system() == "Windows":
-        cmd_prefix = os.path.abspath(r".\biliup.exe")  # 使用绝对路径
-    else:
-        cmd_prefix = "./biliup"
+    coverPath = os.path.normpath(str(sub_dir / "cover.jpg"))  # 规范化封面路径
+    cmd_prefix = shlex.quote(str(BILIUP_BIN))
 
     CMD = (
         cmd_prefix
@@ -235,7 +238,7 @@ def main(vUrl, TID, plain_title=True):
         + " --title "
         + get_double(title)
         + " --cover "
-        + os.path.join(sub_dir, "cover.jpg")
+        + shlex.quote(str(sub_dir / "cover.jpg"))
     )
     print("[🚀 Original title]: ", title)
     print("[🚀 Start to using biliup, with these CMD commend]:\n", CMD)

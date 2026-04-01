@@ -67,6 +67,7 @@
 
    - 修改 `new_downloader.py` 中 `LineN` 选择上传线路（可选：cos/bda2/qn/ws/kodo）
    - 设置 `REMOVE_FILE` 控制是否在投稿后删除本地文件
+   - 运行时文件统一在 `runtime/`（`videos/`、`task_work.log`、任务历史等）
 
 ---
 
@@ -93,6 +94,11 @@ python3 new_downloader.py -s "https://www.youtube.com/watch?v=xxxxxx" -t 21
 ```shell
 python3 new_downloader.py -i urls.txt -t 21
 ```
+
+### 目录说明（重构后）
+
+- `assets/images/`：封面与展示素材
+- `runtime/`：运行时产物（自动创建，默认不入库）
 
 
 ### 参数说明

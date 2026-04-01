@@ -20,7 +20,7 @@ def split_video(input_path, output_dir, segment_length_min=30):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("用法: python split.py <视频文件路径> [输出目录] [每段分钟数，默认30]")
+        print("用法: python scripts/split.py <视频文件路径> [输出目录] [每段分钟数，默认30]")
         sys.exit(1)
     input_video_path = sys.argv[1]
     output_folder = sys.argv[2] if len(sys.argv) > 2 else "./splits"

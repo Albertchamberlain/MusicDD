@@ -11,6 +11,11 @@ load_dotenv(Path(__file__).resolve().parent / ".env")
 
 import new_downloader
 
+BASE_DIR = Path(__file__).resolve().parent
+RUNTIME_DIR = BASE_DIR / "runtime"
+COOKIES_PATH = BASE_DIR / "cookies.json"
+TASK_HISTORY_PATH = RUNTIME_DIR / "data.json"
+
 OWNER = int(os.environ.get("BILI_OWNER_UID", "0") or "0")
 BILI_MSG_BEGIN_SEQNO = (os.environ.get("BILI_MSG_BEGIN_SEQNO") or "").strip()
 REFERSH_TIME = 0.1  # 检查命令消息间隔时间，单位：分钟
@@ -25,7 +30,7 @@ if OWNER == 0 or not BILI_MSG_BEGIN_SEQNO:
 
 
 def get_cookie():
-    text=open("./cookies.json").read()
+    text = COOKIES_PATH.read_text(encoding="utf-8")
     json_obj=json.loads(str(text))
     cookie_list=json_obj["cookie_info"]["cookies"]
     i=0
@@ -44,12 +49,13 @@ def get_bilibili_api(url):
     print(json.loads(r.text))
     return json.loads(r.text)
 
-def save(data,path="./data.json"):
-    with open(path, "w") as f:
+def save(data, path=TASK_HISTORY_PATH):
+    RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
         f.write(json.dumps(data))
 
-def read(file_name="./data.json"):
-    with open(file_name, "r") as f:
+def read(file_name=TASK_HISTORY_PATH):
+    with open(file_name, "r", encoding="utf-8") as f:
         return json.loads(f.read())
 
 def match_url(url):

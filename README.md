@@ -37,7 +37,7 @@
 
 ## 简介
 
-**MusicDD** 是个人音乐 / 视频搬运与批处理相关脚本集合：从 YouTube 下载、长视频切片，到通过 [biliup](https://github.com/biliup/biliup) 投稿 B 站；并包含可复用的艺人链接清单（`Arts/`）与独立子项目示例。
+**MusicDD** 是个人音乐 / 视频搬运与批处理相关脚本集合：从 YouTube 下载、长视频切片，到通过 [biliup](https://github.com/biliup/biliup) 投稿 B 站；并包含可复用的艺人链接清单（`resources/lists/arts/`）与独立子项目示例。
 
 > 名称里的 **DD** 取自 **D**ownload & **D**eliver（下载与投递），也呼应「音乐向」内容管线。
 
@@ -48,9 +48,10 @@
 | 模块 | 说明 |
 |------|------|
 | **`u2b/`** | YouTube 下载 + 封面处理 + **B 站自动投稿**；支持单条、批量、断点续传（见子目录 README） |
-| **`batch_yt_download.py`** | 批量 `yt-dlp` 下载；可选 **`--split`** 用 **ffmpeg** 将超过 30 分钟的视频切段（内置 `split_video`，依赖 `ffmpeg` / `ffprobe`） |
-| **`split.py`** | 独立脚本：用 **MoviePy** 将长视频按固定时长切片（命令行传入视频路径；与 `batch_yt_download` 无 import 关系） |
-| **`Arts/`** | 各艺人 / 主题的 URL 列表文本，便于批量任务复用 |
+| **`scripts/batch_yt_download.py`** | 批量 `yt-dlp` 下载；可选 **`--split`** 用 **ffmpeg** 将超过 30 分钟的视频切段（内置 `split_video`，依赖 `ffmpeg` / `ffprobe`） |
+| **`scripts/split.py`** | 独立脚本：用 **MoviePy** 将长视频按固定时长切片（命令行传入视频路径；与 `batch_yt_download` 无 import 关系） |
+| **`resources/lists/arts/`** | 各艺人 / 主题的 URL 列表文本，便于批量任务复用 |
+| **`assets/images/`** | 项目展示图与静态图片资源（banner / qrcode / snipaste 等） |
 | **`bilibili-viewcount-booster/`** | 第三方「播放量」实验性子项目（代理轮询）；**请自行评估合规与平台规则后再使用** |
 
 ---
@@ -61,10 +62,18 @@
 MusicDD/
 ├── README.md                 # 本说明
 ├── .gitignore
-├── batch_yt_download.py      # 批量下载 YouTube（可选分割）
-├── split.py
-├── Arts/                     # 艺人/主题 URL 列表
+├── assets/
+│   └── images/               # 展示图与静态图片资源
+├── resources/
+│   └── lists/
+│       ├── arts/             # 艺人/主题 URL 列表
+│       └── trending_pop_songs.txt
+├── scripts/
+│   ├── batch_yt_download.py  # 批量下载 YouTube（可选分割）
+│   └── split.py
 ├── u2b/                      # YouTube → Bilibili 主流程
+│   ├── assets/images/        # u2b 静态图片资源
+│   ├── runtime/              # 运行时产物（默认忽略）
 │   ├── new_downloader.py
 │   ├── task_manager.py
 │   ├── requirements.txt
@@ -86,7 +95,7 @@ git clone https://github.com/Albertchamberlain/MusicDD.git
 cd MusicDD
 ```
 
-### 2. 仅批量下载 YouTube（根目录脚本）
+### 2. 仅批量下载 YouTube（`scripts/`）
 
 ```bash
 python3 -m venv venv
@@ -94,10 +103,10 @@ source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install tqdm pillow    # batch_yt_download 会用到 Pillow（缩略图 webp→jpg）
 
 # 准备 urls.txt，每行一个链接，然后：
-python3 batch_yt_download.py -i urls.txt -o ./downloads
+python3 scripts/batch_yt_download.py -i urls.txt -o ./downloads
 
 # 长视频按 30 分钟切段：
-python3 batch_yt_download.py -i urls.txt -o ./downloads --split
+python3 scripts/batch_yt_download.py -i urls.txt -o ./downloads --split
 ```
 
 需本机已安装 **`yt-dlp`**、**`ffmpeg`** / **`ffprobe`**。
