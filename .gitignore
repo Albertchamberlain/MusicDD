@@ -1,0 +1,26 @@
+# Python
+venv/
+**/venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Local secrets & heavy artifacts
+.env
+.env.*
+!**/.env.example
+*.zip
+
+# u2b: 登录态与本地配置（勿提交）
+u2b/.env
+u2b/cookies.json
+u2b/data.json
+u2b/TID.json

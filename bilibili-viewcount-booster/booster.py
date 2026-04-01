@@ -1,0 +1,209 @@
+import sys
+import threading
+import random
+from time import sleep
+from typing import Optional
+from datetime import date, datetime, timedelta
+import argparse
+
+import requests
+from fake_useragent import UserAgent
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Boost Bilibili video view counts')
+    parser.add_argument('-i', '--input', type=str, required=True, help='Input file containing video URLs')
+    parser.add_argument('-t', '--target', type=int, required=True, help='Target view count for each video')
+    return parser.parse_args()
+
+# parameters
+timeout = 3  # seconds for proxy connection timeout
+thread_num = 75  # thread count for filtering active proxies
+round_time = 305  # seconds for each round of view count boosting
+update_pbar_count = 10  # update view count progress bar for every xx proxies
+
+def time(seconds: int) -> str:
+    if seconds < 60:
+        return f'{seconds}s'
+    else:
+        return f'{int(seconds / 60)}min {seconds % 60}s'
+
+def pbar(n: int, total: int, hits: Optional[int], view_increase: Optional[int]) -> str:
+    progress = '━' * int(n / total * 50)
+    blank = ' ' * (50 - len(progress))
+    if hits is None or view_increase is None:
+        return f'\r{n}/{total} {progress}{blank}'
+    else:
+        return f'\r{n}/{total} {progress}{blank} [Hits: {hits}, Views+: {view_increase}]'
+
+def get_bvid_from_url(url: str) -> str:
+    # 从URL中提取BV号
+    if 'BV' in url:
+        return url[url.index('BV'):].split('/')[0].split('?')[0]
+    return ''
+
+def boost_video(bv: str, target: int, active_proxies: list) -> None:
+    successful_hits = 0  # count of successful proxy requests
+    initial_view_count = 0  # starting view count
+    current = 0
+    info = {}  # Initialize info dictionary
+
+    print(f'\nstart boosting {bv} at {datetime.now().strftime("%H:%M:%S")}')
+
+    # Get initial view count
+    try:
+        info = requests.get(f'https://api.bilibili.com/x/web-interface/view?bvid={bv}',
+                        headers={'User-Agent': UserAgent().random}).json()['data']
+        initial_view_count = info['stat']['view']
+        current = initial_view_count
+        print(f'Initial view count: {initial_view_count}')
+    except Exception as e:
+        print(f'Failed to get initial view count: {e}')
+        return
+
+    while True:
+        reach_target = False
+        start_time = datetime.now()
+        
+        # send POST click request for each proxy
+        for i, proxy in enumerate(active_proxies):
+            try:
+                if i % update_pbar_count == 0:  # update progress bar
+                    print(f'{pbar(current, target, successful_hits, current - initial_view_count)} updating view count...', end='')
+                    info = (requests.get(f'https://api.bilibili.com/x/web-interface/view?bvid={bv}',
+                                        headers={'User-Agent': UserAgent().random})
+                            .json()['data'])
+                    current = info['stat']['view']
+                    if current >= target:
+                        reach_target = True
+                        print(f'{pbar(current, target, successful_hits, current - initial_view_count)} done                 ', end='')
+                        break
+
+                requests.post('http://api.bilibili.com/x/click-interface/click/web/h5',
+                            proxies={'http': 'http://'+proxy},
+                            headers={'User-Agent': UserAgent().random},
+                            timeout=timeout,
+                            data={
+                                'aid': info['aid'],
+                                'cid': info['cid'],
+                                'bvid': bv,
+                                'part': '1',
+                                'mid': info['owner']['mid'],
+                                'jsonp': 'jsonp',
+                                'type': info['desc_v2'][0]['type'] if info['desc_v2'] else '1',
+                                'sub_type': '0'
+                            })
+                successful_hits += 1
+                print(f'{pbar(current, target, successful_hits, current - initial_view_count)} proxy({i+1}/{len(active_proxies)}) success   ', end='')
+            except:  # proxy connect timeout
+                print(f'{pbar(current, target, successful_hits, current - initial_view_count)} proxy({i+1}/{len(active_proxies)}) fail      ', end='')
+
+        if reach_target:  # reach target view count
+            break
+        remain_seconds = int(round_time-(datetime.now()-start_time).total_seconds())
+        if remain_seconds > 0:
+            for second in reversed(range(remain_seconds)):
+                print(f'{pbar(current, target, successful_hits, current - initial_view_count)} next round: {time(second)}          ', end='')
+                sleep(1)
+
+    success_rate = (successful_hits / len(active_proxies)) * 100 if active_proxies else 0
+    print(f'\nFinish at {datetime.now().strftime("%H:%M:%S")}')
+    print(f'Statistics:')
+    print(f'- Initial views: {initial_view_count}')
+    print(f'- Final views: {current}')
+    print(f'- Total increase: {current - initial_view_count}')
+    print(f'- Successful hits: {successful_hits}')
+    print(f'- Success rate: {success_rate:.2f}%\n')
+
+def main():
+    args = parse_args()
+    
+    # 读取视频URL列表
+    try:
+        with open(args.input, 'r') as f:
+            urls = [line.strip() for line in f if line.strip()]
+    except Exception as e:
+        print(f'Error reading input file: {e}')
+        return
+
+    # 提取所有BV号
+    bvids = [get_bvid_from_url(url) for url in urls]
+    bvids = [bv for bv in bvids if bv]  # 过滤无效的BV号
+    
+    if not bvids:
+        print('No valid Bilibili video URLs found in input file')
+        return
+
+    print(f'Found {len(bvids)} videos to boost')
+
+    # 1.get proxy
+    print()
+    day = date.today()
+    total_proxies = []
+    while True:  # search for the latest day with proxies
+        day = day - timedelta(days=1)
+        proxy_url = f'https://api.checkerproxy.net/v1/landing/archive/{day.strftime("%Y-%m-%d")}'
+        print(f'getting proxies from {proxy_url} ...')
+        response = requests.get(proxy_url)
+        if response.status_code == requests.codes.ok:
+            # 1.1 extract `total_proxies` from response
+            data = response.json()
+            proxies_obj = data['data']['proxyList']
+            if type(proxies_obj) is list:
+                total_proxies = proxies_obj
+            elif type(proxies_obj) is dict:
+                total_proxies = [proxy for proxy in data['data']['proxyList'].values() if proxy]
+            else:
+                raise TypeError(f'Unexpected type of $.data.proxyList: {type(proxies_obj)}')
+
+            # 1.2 check count of proxies
+            if len(total_proxies) > 100:
+                print(f'successfully get {len(total_proxies)} proxies')
+                break
+            else:
+                print(f'only have {len(total_proxies)} proxies')
+        else:
+            print('no proxy')
+
+    # 2.filter proxies by multi-threading
+    if len(total_proxies) > 10000:
+        print('more than 10000 proxies, randomly pick 10000 proxies')
+        random.shuffle(total_proxies)
+        total_proxies = total_proxies[:10000]
+
+    active_proxies = []
+    count = 0
+    def filter_proxys(proxies: 'list[str]') -> None:
+        global count
+        for proxy in proxies:
+            count = count + 1
+            try:
+                requests.post('http://httpbin.org/post',
+                            proxies={'http': 'http://'+proxy},
+                            timeout=timeout)
+                active_proxies.append(proxy)
+            except:  # proxy connect timeout
+                pass
+            print(f'{pbar(count, len(total_proxies), hits=None, view_increase=None)} {100*count/len(total_proxies):.1f}%   ', end='')
+
+    start_filter_time = datetime.now()
+    print('\nfiltering active proxies using http://httpbin.org/post ...')
+    thread_proxy_num = len(total_proxies) // thread_num
+    threads = []
+    for i in range(thread_num):
+        # calculate the start and end index of the proxies that this thread needs to process
+        start = i * thread_proxy_num
+        end = start + thread_proxy_num if i < (thread_num - 1) else None  # the last thread processes the remaining proxies
+        thread = threading.Thread(target=filter_proxys, args=(total_proxies[start:end],))
+        thread.start()
+        threads.append(thread)
+    for thread in threads:
+        thread.join()  # wait for all threads to finish
+    filter_cost_seconds = int((datetime.now()-start_filter_time).total_seconds())
+    print(f'\nsuccessfully filter {len(active_proxies)} active proxies using {time(filter_cost_seconds)}')
+
+    # 3.boost each video
+    for bv in bvids:
+        boost_video(bv, args.target, active_proxies)
+
+if __name__ == '__main__':
+    main()

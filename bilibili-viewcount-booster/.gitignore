@@ -1,0 +1,7 @@
+.idea
+.vscode
+
+# Pyinstaller generated files
+build
+dist
+*.spec
