@@ -125,6 +125,7 @@ python3 one_click.py -i urls.txt -t 21
 说明：`-t` 是 B 站投稿分区 ID（`tid`），示例里的 `21` 只是示例值；可按目标分区改成其他 ID（如 `194`）。
 
 完整参数、分区 TID、断点续传格式等见 **[`u2b/README.md`](u2b/README.md)**。
+Windows 用户可直接参考 `u2b/README.md` 中的 **Windows 用户配置（PowerShell / CMD）** 小节。
 
 ---
 

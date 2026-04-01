@@ -71,6 +71,54 @@
    - 设置 `REMOVE_FILE` 控制是否在投稿后删除本地文件
    - 运行时文件统一在 `runtime/`（`videos/`、`task_work.log`、任务历史等）
 
+### Windows 用户配置（PowerShell / CMD）
+
+1. 进入目录并创建虚拟环境
+
+```powershell
+cd u2b
+python -m venv .venv
+```
+
+2. 激活虚拟环境并安装依赖
+
+```powershell
+# PowerShell
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+```
+
+```bat
+:: CMD
+.\.venv\Scripts\activate.bat
+python -m pip install -r requirements.txt
+```
+
+3. 复制环境变量模板并填写
+
+```powershell
+copy .env.example .env
+notepad .env
+```
+
+4. 登录 B 站（生成 `cookies.json`）
+
+```powershell
+.\biliup.exe login
+```
+
+5. 一步到位执行
+
+```powershell
+# 单个链接
+python one_click.py -s "https://www.youtube.com/watch?v=VIDEO_ID" -t 194
+
+# 批量链接
+python one_click.py -i urls.txt -t 194
+```
+
+> 说明：Windows 下建议优先使用 `python -m pip` 安装依赖，避免 `pip` 指向错误解释器。
+
 ---
 
 ## 📝 使用方法
